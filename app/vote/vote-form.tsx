@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-
 type VoterType = "STUDENT" | "PARENT";
 
 export function VoteForm() {
@@ -16,30 +15,40 @@ export function VoteForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-   async function continueToVote(e: any) {
-  e.preventDefault();
+  async function continueToVote(e: any) {
+    e.preventDefault();
 
-  let deviceId = localStorage.getItem("vote-device-id");
+    console.log({
+      type,
+      firstName,
+      lastName,
+      className,
+      childFirstName,
+      childLastName,
+      childClass,
+    });
 
-  if (!deviceId) {
-    deviceId = crypto.randomUUID();
-    localStorage.setItem("vote-device-id", deviceId);
-  }
+    let deviceId = localStorage.getItem("vote-device-id");
+
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem("vote-device-id", deviceId);
+    }
 
     setMessage("");
     setLoading(true);
 
     sessionStorage.setItem(
       "voterData",
-     JSON.stringify({
-       type,
-       firstName,
-       lastName,
-       className,
-       childFirstName,
-       childLastName,
-       childClass,
-       deviceId,
+      JSON.stringify({
+        type,
+        firstName,
+        lastName,
+        className,
+        childFirstName,
+        childLastName,
+        childClass,
+        deviceId,
       })
     );
 
@@ -131,7 +140,7 @@ export function VoteForm() {
           </div>
         </>
       )}
-   
+
       {message && <div className="notice danger">{message}</div>}
 
       <button className="btn" disabled={loading}>
