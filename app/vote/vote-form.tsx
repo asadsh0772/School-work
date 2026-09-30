@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
+
 
 type VoterType = "STUDENT" | "PARENT";
 
@@ -13,7 +13,6 @@ export function VoteForm() {
   const [childFirstName, setChildFirstName] = useState("");
   const [childLastName, setChildLastName] = useState("");
   const [childClass, setChildClass] = useState("");
-  const [captcha, setCaptcha] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -25,11 +24,6 @@ export function VoteForm() {
   if (!deviceId) {
     deviceId = crypto.randomUUID();
     localStorage.setItem("vote-device-id", deviceId);
-  }
-
-  if (!captcha) {
-    setMessage("Пожалуйста, пройдите CAPTCHA.");
-    return;
   }
 
     setMessage("");
@@ -45,7 +39,6 @@ export function VoteForm() {
        childFirstName,
        childLastName,
        childClass,
-       captcha,
        deviceId,
       })
     );
@@ -138,24 +131,10 @@ export function VoteForm() {
           </div>
         </>
       )}
-
-      <div className="section-title">Проверка CAPTCHA</div>
-
-      <div style={{ margin: "16px 0" }}>
-        <Turnstile
-          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
-          onSuccess={(token) => setCaptcha(token)}
-          onExpire={() => setCaptcha("")}
-          onError={() => {
-            setCaptcha("");
-            setMessage("Не удалось загрузить CAPTCHA.");
-          }}
-        />
-      </div>
-
+   
       {message && <div className="notice danger">{message}</div>}
 
-      <button className="btn" disabled={loading || !captcha}>
+      <button className="btn" disabled={loading}>
         {loading ? "Переходим…" : "Продолжить"}
       </button>
     </form>
