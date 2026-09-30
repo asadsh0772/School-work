@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VoterType {
+  STUDENT
+  PARENT
+}
+
+model Voter {
+  id              String      @id @default(cuid())
+  type            VoterType
+  firstName       String
+  lastName        String
+  className       String?
+  childFirstName  String?
+  childLastName   String?
+  childClass      String?
+  identityHash    String
+  deviceId        String?
+  createdAt       DateTime    @default(now())
+  vote            Vote?
+
+  @@index([identityHash])
+  @@index([deviceId])
+}
+
+model Candidate {
+  id          String   @id @default(cuid())
+  name        String
+  surname     String   @default("")
+  className   String?
+  description String?
+  photoUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  votes       Vote[]
+}
+
+model Vote {
+  id              String    @id @default(cuid())
+  voterId         String    @unique
+  candidateId     String
+  ipHash          String?
+  userAgentHash   String?
+  suspicious      Boolean   @default(false)
+  suspiciousReason String?
+  createdAt       DateTime  @default(now())
+
+  voter     Voter     @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+
+  @@index([ipHash, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  actor     String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
