@@ -18,10 +18,9 @@ export async function POST(req: NextRequest) {
     const childLastName = clean(body.childLastName);
     const childClass = clean(body.childClass);
     const candidateId = clean(body.candidateId);
-    const captcha = clean(body.captcha);
     const deviceId = clean(body.deviceId);
 
-    if (!firstName || !lastName || !candidateId || !captcha) {
+    if (!firstName || !lastName || !candidateId) {
       return NextResponse.json(
         { message: "Заполните все обязательные поля." },
         { status: 400 }
@@ -47,43 +46,10 @@ export async function POST(req: NextRequest) {
 
     if (!deviceId) {
       return NextResponse.json(
-        { message: "Не удалось определить устройство. Обновите страницу и попробуйте снова." },
-        { status: 400 }
-      );
-    }
-
-    // Cloudflare Turnstile
-    if (process.env.TURNSTILE_SECRET_KEY) {
-      const form = new URLSearchParams();
-
-      form.set("secret", process.env.TURNSTILE_SECRET_KEY);
-      form.set("response", captcha);
-
-      const check = await fetch(
-        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: form,
-        }
-      );
-
-      const result = await check.json();
-
-  if (!result.success) {
-  console.log("TURNSTILE RESULT:", result);
-
-  return NextResponse.json(
-    { message: "CAPTCHA не пройдена. Попробуйте ещё раз." },
-    { status: 403 }
-  );
-}  
-
-    } else if (captcha.length < 4) {
-      return NextResponse.json(
-        { message: "Введите CAPTCHA." },
+          message:
+            "Не удалось определить устройство. Обновите страницу и попробуйте снова.",
+        },
         { status: 400 }
       );
     }
@@ -121,7 +87,6 @@ export async function POST(req: NextRequest) {
 
     const identityHash = hash(identitySource);
 
-    // Проверяем, голосовало ли уже это устройство
     const deviceHash = hash(deviceId);
 
     const recentFromIp = await prisma.vote.count({
