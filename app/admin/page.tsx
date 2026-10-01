@@ -21,13 +21,35 @@ export default async function Admin() {
   ]);
 
   const recent = await prisma.vote.findMany({
-    take: 50,
-    orderBy: { createdAt: "desc" },
+    orderBy: {
+      createdAt: "desc",
+    },
     include: {
       voter: true,
       candidate: true,
     },
   });
+
+  // Группируем голоса по классам
+  const classes = new Map<string, typeof recent>();
+
+  for (const vote of recent) {
+    const className =
+      vote.voter.type === "STUDENT"
+        ? vote.voter.className || "Без класса"
+        : vote.voter.childClass || "Без класса";
+
+    if (!classes.has(className)) {
+      classes.set(className, []);
+    }
+
+    classes.get(className)!.push(vote);
+  }
+
+  // Сортируем классы
+  const sortedClasses = Array.from(classes.entries()).sort(([a], [b]) =>
+    a.localeCompare(b, "ru")
+  );
 
   return (
     <main className="container">
@@ -42,6 +64,7 @@ export default async function Admin() {
         </span>
       </div>
 
+      {/* Общая статистика */}
       <div className="stats">
         <div className="card stat">
           <span className="muted">Голосов</span>
@@ -64,66 +87,102 @@ export default async function Admin() {
         </div>
       </div>
 
-      <section className="card" style={{ marginTop: 20 }}>
-        <h2>Последние голоса</h2>
+      {/* Классы */}
+      <section style={{ marginTop: 24 }}>
+        <h2>Голоса по классам</h2>
 
-        <div className="tablewrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Время</th>
-                <th>Тип</th>
-                <th>Голосующий</th>
-                <th>Класс</th>
-                <th>Ребёнок</th>
-                <th>Кандидат</th>
-                <th>Статус</th>
-              </tr>
-            </thead>
+        {sortedClasses.length === 0 ? (
+          <div className="card">
+            <p className="muted">Пока никто не проголосовал.</p>
+          </div>
+        ) : (
+          sortedClasses.map(([className, classVotes]) => (
+            <section
+              key={className}
+              className="card"
+              style={{ marginTop: 20 }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <div>
+                  <span className="badge">КЛАСС</span>
+                  <h2 style={{ margin: "8px 0 0" }}>{className}</h2>
+                </div>
 
-            <tbody>
-              {recent.map((v) => (
-                <tr key={v.id}>
-                  <td>{v.createdAt.toLocaleString("ru-RU")}</td>
+                <strong>
+                  Голосов: {classVotes.length}
+                </strong>
+              </div>
 
-                  <td>
-                    {v.voter.type === "STUDENT"
-                      ? "Ученик"
-                      : "Родитель"}
-                  </td>
+              <div className="tablewrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Время</th>
+                      <th>Голосующий</th>
+                      <th>Тип</th>
+                      <th>Ребёнок</th>
+                      <th>Кандидат</th>
+                      <th>Статус</th>
+                    </tr>
+                  </thead>
 
-                  <td>
-                    {v.voter.firstName} {v.voter.lastName}
-                  </td>
+                  <tbody>
+                    {classVotes.map((vote) => (
+                      <tr key={vote.id}>
+                        <td>
+                          {vote.createdAt.toLocaleString("ru-RU")}
+                        </td>
 
-                  <td>{v.voter.className || "—"}</td>
+                        <td>
+                          {vote.voter.firstName}{" "}
+                          {vote.voter.lastName}
+                        </td>
 
-                  <td>
-                    {v.voter.childFirstName
-                      ? `${v.voter.childFirstName} ${
-                          v.voter.childLastName || ""
-                        } (${v.voter.childClass || "—"})`
-                      : "—"}
-                  </td>
+                        <td>
+                          {vote.voter.type === "STUDENT"
+                            ? "Ученик"
+                            : "Родитель"}
+                        </td>
 
-                  <td>
-                    {v.candidate.name} {v.candidate.surname}
-                  </td>
+                        <td>
+                          {vote.voter.type === "PARENT"
+                            ? `${vote.voter.childFirstName || ""} ${
+                                vote.voter.childLastName || ""
+                              }`
+                            : "—"}
+                        </td>
 
-                  <td>
-                    {v.suspicious ? (
-                      <span className="flag">
-                        ⚠️ {v.suspiciousReason || "Проверить"}
-                      </span>
-                    ) : (
-                      "✅"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        <td>
+                          {vote.candidate.name}{" "}
+                          {vote.candidate.surname}
+                        </td>
+
+                        <td>
+                          {vote.suspicious ? (
+                            <span className="flag">
+                              ⚠️{" "}
+                              {vote.suspiciousReason ||
+                                "Проверить"}
+                            </span>
+                          ) : (
+                            "✅"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))
+        )}
       </section>
     </main>
   );
